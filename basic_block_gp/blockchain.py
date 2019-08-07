@@ -74,23 +74,32 @@ class Blockchain(object):
     def last_block(self):
         return self.chain[-1]
 
-    def proof_of_work(self, last_proof):
+    def proof_of_work(self):
         """
         Simple Proof of Work Algorithm
         Find a number p such that hash(last_block_string, p) contains 6 leading
         zeroes
         """
 
-        pass
+        block_string = json.dumps(self.last_block, sort_keys=True).encode()
+        proof = 0
+        while not self.valid_proof(block_string, proof):
+          proof += 1
+
+        return proof
+
 
     @staticmethod
-    def valid_proof(last_proof, proof):
+    def valid_proof(block_string, proof):
         """
         Validates the Proof:  Does hash(block_string, proof) contain 6
         leading zeroes?
         """
         # TODO
-        pass
+        
+        guess = f"{block_string}{proof}".encode()
+        guess_hash = hashlib.sha256(guess).hexdigest()
+        return guess_hash[:6] == "000000"
 
     def valid_chain(self, chain):
         """
@@ -141,8 +150,13 @@ def mine():
     # The recipient is the current node, it did the mining!
     # The amount is 1 coin as a reward for mining the next block
 
+    blockchain.new_transaction(0, node_identifier, 1)
+
     # Forge the new Block by adding it to the chain
     # TODO
+
+    last_block_hash = blockchain.hash(blockchain.last_block)
+    block = blockchain.new_block(proof, last_block_hash)
 
     # Send a response with the new block
     response = {
@@ -176,7 +190,8 @@ def new_transaction():
 @app.route('/chain', methods=['GET'])
 def full_chain():
     response = {
-        # TODO: Return the chain and its current length
+        "chain": blockchain.chain,
+        "length": len(blockchain.chain)
     }
     return jsonify(response), 200
 
